@@ -24,9 +24,7 @@ def main():
             validate = True
 
     mode = input(
-        "Please select mode - 1 for VillagerDB lookup, 2 for Nookazon listings, 3 for specific item lookup" + '\n')
-    if mode == '1':
-        dbURL = input("Please enter VillagerDB list URL" + '\n')
+        "Please select mode -  2 for Nookazon listings, 3 for specific item lookup" + '\n')
     elif mode == '2':
         nookazonID = input(
             "Please enter your Nookzon ID (the number after profile in the URL)" + '\n')
@@ -200,27 +198,6 @@ def getNookazonOwnedItems(sellerID):
         ownedItems[itemName] += [variantName]
 
     return ownedItems
-
-
-# OLD CODE BEYOND HERE
-def getVillagerDBOwnedItems(villagerDBUrl):
-
-    driver = webdriver.Firefox()
-    driver.get(villagerDBUrl)
-    html = driver.page_source
-    soup = BeautifulSoup(html, features="lxml")
-
-    items = soup.find_all(class_="list-group-item")
-    owned_items = []
-    for item in items:
-        item_name = item.get('data-name')
-        if '(Recipe)' in item_name:
-            item_name = ' '.join(item_name.split()[:-1]) + ' diy recipe'
-        elif ')' in item_name.split()[-1]:
-            modifier = item_name.split()[-1]
-            item_name = modifier[1:-1] + ' ' + ' '.join(item_name.split()[:-1])
-        owned_items.append(item_name.lower().strip())
-    return owned_items
 
 
 if __name__ == "__main__":

@@ -47,10 +47,12 @@ def main():
         wishlistItems = getWishlistItems(seller, wishlistSellerMap[seller])
         matches = getMatches(wishlistItems, ownedItems)
 
-        print("Seller ID:" + seller)
         if len(matches) != 0:
-            print("Matches for seller " + seller + ":")
-            print(matches)
+            listingURL = getListingLink(seller, productID, variantName)
+            print("Listing: " + listingURL)
+            print("Matched items: " + str(matches))
+        else:
+            print("Sorry, no matches were found for the item you selected.")
 
 
 def getProductAndVariantName(searchString):
@@ -239,6 +241,23 @@ def parseSeparateItems(itemList):
         ownedItems[productName] += [variantName if variantName else 'None']
 
     return ownedItems
+
+
+def getListingLink(sellerID, productID, variantName=None):
+
+    payload = {'seller': sellerID, 'item_id': productID, 'auction': 'false'}
+    if variantName:
+        if variantName == 'diy':
+            payload['diy'] = 'true'
+        else:
+            payload['variant_name'] = variantName
+
+    request = requests.get('https://nookazon.com/api/listings', payload)
+    json = request.json()
+
+    if len(json['listings']) == 0:
+        return
+    return 'https://nookazon.com/listing/' + json['listings'][0]['id']
 
 
 if __name__ == "__main__":

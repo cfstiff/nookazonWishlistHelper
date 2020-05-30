@@ -7,7 +7,7 @@ def main():
     validate = False
     while validate == False:
         userProductNameInput = input(
-            "Hello - what item are you looking for?" + '\n')
+            "Enter the name of the item you want to buy. Do not include any variations(ex. enter \'Diner Chair\', not \'Red Diner Chair\')" + '\n')
 
         productName, variantName, productID = getProductAndVariantName(
             userProductNameInput)
@@ -15,7 +15,7 @@ def main():
         strVarName = variantName + ' ' if variantName else ''
 
         userCheck = input("Found item " + strVarName + productName +
-                          ". Is this correct? (Y/N)")
+                          ". Is this the correct item and variation? (Y/N)")
         if userCheck.lower() == 'y':
             validate = True
 
@@ -45,8 +45,9 @@ def main():
 
         if len(matches) != 0:
             listingURL = getListingLink(seller, productID, variantName)
-            print("Listing: " + listingURL)
-            print("Matched items: " + str(matches))
+            if listingURL:
+                print("Listing: " + listingURL)
+                print("Matched items: " + str(matches))
 
 
 def getProductAndVariantName(searchString):
@@ -132,16 +133,13 @@ def getVariantName(productID, productName=None):
                 for i in range(len(variants)):
                     print(str(i + 1) + ": " + variants[i]['name'])
 
-            print("Press Q to not specify a variant")
-            print(
-                "Note - you cannot specify the crafted version of an object at this time")
+            print("Press Q to not specify")
 
             variationName = None
             while variationName == None:
                 index = input(
                     "Please enter the number of the variant you want" + '\n')
                 try:
-                    print(index)
                     if index == str(0):
                         variationName = 'diy'
                     elif index == 'Q' or index == 'q':
@@ -239,19 +237,20 @@ def parseSeparateItems(itemList):
 
 def getListingLink(sellerID, productID, variantName=None):
 
-    payload = {'seller': sellerID, 'item_id': productID, 'auction': 'false'}
-    if variantName:
-        if variantName == 'diy':
-            payload['diy'] = 'true'
-        else:
-            payload['variant_name'] = variantName
+    payload = {'seller': sellerID, 'auction': 'false'}
 
     request = requests.get('https://nookazon.com/api/listings', payload)
     json = request.json()
 
     if len(json['listings']) == 0:
         return
-    return 'https://nookazon.com/listing/' + json['listings'][0]['id']
+    isDIY = True if variantName else False
+    for listing in json['listings']:
+        if listing['item_id'] == productID:
+            if (variantName and isDIY and listing['diy'] == isDIY) or (variantName and listing['variant_name'] and listing['variant_name'].lower() == variantName) or (not variantName):
+
+                return 'https://nookazon.com/listing/' + listing['id']
+    return
 
 
 if __name__ == "__main__":

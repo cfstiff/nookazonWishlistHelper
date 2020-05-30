@@ -28,7 +28,7 @@ def main():
     elif mode == '2':
         OWNED_ITEMS = getNookazonOwnedItems(nookazonURL, driver)
     else:
-        OWNED_ITEMS = items
+        OWNED_ITEMS = [x.lower().strip() for x in items.split(',')]
     print("OWNED ITEMS: ")
     print(OWNED_ITEMS)
     wishlists = getWishlistURLs(productID, driver)
@@ -55,9 +55,6 @@ def getMatches(wishlists, driver, OWNED_ITEMS):
 
             if item_name in OWNED_ITEMS:
                 current_matches.append(item_name)
-                print("MATCHED: " + item_name)
-            else:
-                print("NOT MATCHED: " + item_name)
         if len(current_matches) != 0:
             matches[wishlist] = current_matches
 
@@ -118,3 +115,7 @@ def getNookazonOwnedItems(nookazonURL, driver):
         items.append(item_name)
 
     return items
+
+
+if __name__ == "__main__":
+    main()

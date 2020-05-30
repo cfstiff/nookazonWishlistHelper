@@ -24,10 +24,10 @@ def main():
             validate = True
 
     mode = input(
-        "Please select mode -  2 for Nookazon listings, 3 for specific item lookup" + '\n')
-    elif mode == '2':
+        "Please select mode -  1 for Nookazon Catalog, 2 for Nookazon listings, 3 for specific item lookup" + '\n')
+    if mode == '1' or mode == '2':
         nookazonID = input(
-            "Please enter your Nookzon ID (the number after profile in the URL)" + '\n')
+            "Please enter your Nookazon ID (the number after profile in the URL)" + '\n')
     elif mode == '3':
         items = input(
             "Please enter a comma separated list of items that you would like to search for" + '\n')
@@ -35,10 +35,9 @@ def main():
         return("Invalid mode entered, please restart the program")
 
     if mode == '1':
-        return
-        # ownedItems = getVillagerDBOwnedItems(dbURL, driver)
+        ownedItems = getNookazonCatalogItems(nookazonID)
     elif mode == '2':
-        ownedItems = getNookazonOwnedItems(nookazonID)
+        ownedItems = getNookazonListingItems(nookazonID)
     else:
         return
         # OWNED_ITEMS = [x.lower().strip() for x in items.split(',')]
@@ -180,7 +179,7 @@ def getMatches(wishlistItems, ownedItems):
     return matches
 
 
-def getNookazonOwnedItems(sellerID):
+def getNookazonListingItems(sellerID):
 
     payload = {'auction': False, 'seller': sellerID}
     request = requests.get('https://nookazon.com/api/listings', payload)
@@ -193,6 +192,35 @@ def getNookazonOwnedItems(sellerID):
             variantName = 'diy'
         elif listing['variant_name']:
             variantName = listing['variant_name'].lower()
+        else:
+            variantName = 'None'
+        ownedItems[itemName] += [variantName]
+
+    return ownedItems
+
+
+def getNookazonCatalogItems(sellerID):
+    payload = {'user': sellerID}
+    request = requests.get('https://nookazon.com/api/catalog', payload)
+    json = request.json()
+
+    ownedItems = defaultdict(list)
+    for item in json['catalog']:
+        variantName = 'None'
+        itemName = item['name'].lower()
+        if item['diy'] == True:
+            variantName = 'diy'
+        elif item['variant_id']:
+            # Get all variants
+            variant_payload = {'id': item['id'], 'variants': ''}
+            request = requests.get(
+                "https://nookazon.com/api/items", variant_payload)
+            json = request.json()
+            variants = json['items'][0]['variants']
+            for variant in variants:
+                if str(variant['id']) == item['variant_id']:
+                    variantName = variant['name'].lower()
+                    break
         else:
             variantName = 'None'
         ownedItems[itemName] += [variantName]

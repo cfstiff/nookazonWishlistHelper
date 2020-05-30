@@ -1,10 +1,6 @@
-from bs4 import BeautifulSoup
 import requests
-from selenium import webdriver
 import re
 from collections import defaultdict
-
-NOOKAZON_URL = "http://nookazon.com"
 
 
 def main():
@@ -51,9 +47,6 @@ def main():
             listingURL = getListingLink(seller, productID, variantName)
             print("Listing: " + listingURL)
             print("Matched items: " + str(matches))
-    
-
-       
 
 
 def getProductAndVariantName(searchString):

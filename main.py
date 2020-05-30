@@ -16,7 +16,9 @@ def main():
         productName, variantName, productID = getProductAndVariantName(
             userProductNameInput)
 
-        userCheck = input("Found item " + productName +
+        strVarName = variantName + ' ' if variantName else ''
+
+        userCheck = input("Found item " + strVarName + productName +
                           ". Is this correct? (Y/N)")
         if userCheck.lower() == 'y':
             validate = True
@@ -36,7 +38,7 @@ def main():
 
     if mode == '1':
         return
-        # OWNED_ITEMS = getVillagerDBOwnedItems(dbURL, driver)
+        # ownedItems = getVillagerDBOwnedItems(dbURL, driver)
     elif mode == '2':
         ownedItems = getNookazonOwnedItems(nookazonID)
     else:
@@ -121,21 +123,39 @@ def getVariantName(productID):
     json = request.json()
 
     variants = json['items'][0]['variants']
-    if variants:
-        print("Variants found - would you like to specify one?")
-        userIn = input("Press y if you would like to specify a variant" + '\n')
+    diy = json['items'][0]['diy']
+    if variants or diy:
+        print("Variants and/or DIY Recipe found - would you like to specify one?")
+        userIn = input(
+            "Press y if you would like to specify a variant or DIY" + '\n')
+
         if (userIn == 'y' or userIn == 'Y'):
-            for i in range(len(variants)):
-                print(str(i) + ": " + variants[i]['name'])
+            if diy:
+                print("0: DIY Recipe")
+
+            if variants:
+                for i in range(len(variants)):
+                    print(str(i + 1) + ": " + variants[i]['name'])
+
+            print("Press Q to not specify a variant")
+            print(
+                "Note - you cannot specify the crafted version of an object at this time")
+
             variationName = None
             while variationName == None:
                 index = input(
                     "Please enter the number of the variant you want" + '\n')
                 try:
-                    variationName = variants[int(index)]['name']
+                    if index == str(0):
+                        variationName = 'diy'
+                    elif index == 'Q'or 'q':
+                        return None
+                    else:
+                        variationName = variants[int(index) - 1]['name']
                 except:
                     print("Invalid entry, please try again")
                     variationName = None
+                    print(variants)
         else:
             return None
 
@@ -148,8 +168,11 @@ def getMatches(wishlistItems, ownedItems):
     for listing in wishlistItems['listings']:
         itemName = listing['name'].lower()
         if itemName in ownedItems.keys() and len(ownedItems[itemName]) != 0:
-            if not listing['variant_name']:
+            if not listing['variant_name'] and listing['diy'] != True:
                 matches.append(itemName)
+            elif listing['diy'] == True:
+                if 'diy' in ownedItems[itemName]:
+                    matches.append(itemName + "DIY Recipe")
             else:
                 variantName = listing['variant_name'].lower()
                 if variantName in ownedItems[itemName]:
@@ -168,18 +191,21 @@ def getNookazonOwnedItems(sellerID):
     ownedItems = defaultdict(list)
     for listing in json['listings']:
         itemName = listing['name'].lower()
-        if listing['variant_name']:
+        if listing['diy'] == True:
+            variantName = 'diy'
+        elif listing['variant_name']:
             variantName = listing['variant_name'].lower()
         else:
-            variantName = ['None']
+            variantName = 'None'
         ownedItems[itemName] += [variantName]
 
     return ownedItems
 
 
 # OLD CODE BEYOND HERE
-def getVillagerDBOwnedItems(villagerDBUrl, driver):
+def getVillagerDBOwnedItems(villagerDBUrl):
 
+    driver = webdriver.Firefox()
     driver.get(villagerDBUrl)
     html = driver.page_source
     soup = BeautifulSoup(html, features="lxml")
@@ -190,7 +216,7 @@ def getVillagerDBOwnedItems(villagerDBUrl, driver):
         item_name = item.get('data-name')
         if '(Recipe)' in item_name:
             item_name = ' '.join(item_name.split()[:-1]) + ' diy recipe'
-        elif '(' in item_name.split()[-1]:
+        elif ')' in item_name.split()[-1]:
             modifier = item_name.split()[-1]
             item_name = modifier[1:-1] + ' ' + ' '.join(item_name.split()[:-1])
         owned_items.append(item_name.lower().strip())

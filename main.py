@@ -30,7 +30,7 @@ def main():
             "Please enter your Nookazon ID (the number after profile in the URL)" + '\n')
     elif mode == '3':
         items = input(
-            "Please enter a comma separated list of items that you would like to search for" + '\n')
+            "Please enter a comma separated list of items that you would like to search for. Do not include variant - you will set this later" + '\n')
     else:
         return("Invalid mode entered, please restart the program")
 
@@ -39,8 +39,8 @@ def main():
     elif mode == '2':
         ownedItems = getNookazonListingItems(nookazonID)
     else:
-        return
-        # OWNED_ITEMS = [x.lower().strip() for x in items.split(',')]
+        ownedItems = parseSeparateItems(
+            [x.lower().strip() for x in items.split(',')])
 
     wishlistSellerMap = getWishlistOffers(productID)
     for seller in wishlistSellerMap.keys():
@@ -55,7 +55,7 @@ def main():
 
 def getProductAndVariantName(searchString):
     productName, productID = getProductName(searchString)
-    variantName = getVariantName(productID)
+    variantName = getVariantName(productID, productName)
 
     return [productName, variantName, productID]
 
@@ -91,8 +91,9 @@ def getProductName(searchTerm):
     json = request.json()
 
     if len(json['items']) == 0:
-        print("No item found - please search again")
-        return
+        print("No item found for search " + searchTerm)
+        newTerm = input("Input new search term: ")
+        return getProductName(newTerm)
     elif len(json['items']) == 1:
         itemName = json['items'][0]['name']
         itemID = json['items'][0]['id']
@@ -114,7 +115,7 @@ def getProductName(searchTerm):
     return [itemName.lower(), itemID]
 
 
-def getVariantName(productID):
+def getVariantName(productID, productName=None):
     payload = {'id': productID, 'variants': ''}
     request = requests.get("https://nookazon.com/api/items", payload)
     json = request.json()
@@ -122,7 +123,8 @@ def getVariantName(productID):
     variants = json['items'][0]['variants']
     diy = json['items'][0]['diy']
     if variants or diy:
-        print("Variants and/or DIY Recipe found - would you like to specify one?")
+        print("Variants and/or DIY Recipe found " +
+              ("for item " + productName if productName else " "))
         userIn = input(
             "Press y if you would like to specify a variant or DIY" + '\n')
 
@@ -143,19 +145,21 @@ def getVariantName(productID):
                 index = input(
                     "Please enter the number of the variant you want" + '\n')
                 try:
+                    print(index)
                     if index == str(0):
                         variationName = 'diy'
-                    elif index == 'Q'or 'q':
+                    elif index == 'Q' or index == 'q':
                         return None
                     else:
                         variationName = variants[int(index) - 1]['name']
+
                 except:
                     print("Invalid entry, please try again")
                     variationName = None
-                    print(variants)
+
+            return variationName.lower()
         else:
             return None
-
         return variationName.lower()
     return None
 
@@ -224,6 +228,15 @@ def getNookazonCatalogItems(sellerID):
         else:
             variantName = 'None'
         ownedItems[itemName] += [variantName]
+
+    return ownedItems
+
+
+def parseSeparateItems(itemList):
+    ownedItems = defaultdict(list)
+    for item in itemList:
+        productName, variantName, _ = getProductAndVariantName(item)
+        ownedItems[productName] += [variantName if variantName else 'None']
 
     return ownedItems
 

@@ -51,8 +51,9 @@ def main():
             listingURL = getListingLink(seller, productID, variantName)
             print("Listing: " + listingURL)
             print("Matched items: " + str(matches))
-        else:
-            print("Sorry, no matches were found for the item you selected.")
+    
+
+       
 
 
 def getProductAndVariantName(searchString):

@@ -11,10 +11,12 @@ def main():
         "Hello - what item are you looking for? Please use nookazon product ID" + '\n')
 
     mode = input(
-        "Please select mode - 1 for VillagerDB lookup, 2 for specific item lookup")
+        "Please select mode - 1 for VillagerDB lookup, 2 for Nookazon listings, 3 for specific item lookup" + '\n')
     if mode == '1':
-        dbURL = input("Please enter VillagerDB list URL")
+        dbURL = input("Please enter VillagerDB list URL" + '\n')
     elif mode == '2':
+        nookazonURL = input("Please enter Nookazon listings URL" + '\n')
+    elif mode == '3':
         items = input(
             "Please enter a comma separated list of items that you would like to search for")
     else:
@@ -22,9 +24,13 @@ def main():
 
     driver = webdriver.Firefox()
     if mode == '1':
-        OWNED_ITEMS = getOwnedItems(dbURL, driver)
+        OWNED_ITEMS = getVillagerDBOwnedItems(dbURL, driver)
+    elif mode == '2':
+        OWNED_ITEMS = getNookazonOwnedItems(nookazonURL, driver)
     else:
         OWNED_ITEMS = items
+    print("OWNED ITEMS: ")
+    print(OWNED_ITEMS)
     wishlists = getWishlistURLs(productID, driver)
     matches = getMatches(wishlists, driver, OWNED_ITEMS)
     print(matches)
@@ -33,12 +39,11 @@ def main():
 
 def getMatches(wishlists, driver, OWNED_ITEMS):
     matches = {}
-    print('OWNED ITEMS: ' + str(OWNED_ITEMS))
     for wishlist in wishlists:
         url = NOOKAZON_URL + wishlist
         driver.get(url)
         html = driver.page_source
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="lxml")
 
         current_matches = []
         for listing in soup.find_all(class_="listing-name"):
@@ -64,7 +69,7 @@ def getWishlistURLs(productID, driver):
 
     driver.get(url)
     html = driver.page_source
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, features="lxml")
 
     listings = soup.find_all(class_="listing-content")
     wishlistURLs = []
@@ -77,15 +82,16 @@ def getWishlistURLs(productID, driver):
     return wishlistURLs
 
 
-def getOwnedItems(villagerDBUrl, driver):
+def getVillagerDBOwnedItems(villagerDBUrl, driver):
 
     driver.get(villagerDBUrl)
     html = driver.page_source
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, features="lxml")
 
     items = soup.find_all(class_="list-group-item")
     owned_items = []
     for item in items:
+        print(item)
         item_name = item.get('data-name')
         if '(Recipe)' in item_name:
             item_name = ' '.join(item_name.split()[:-1]) + ' diy recipe'
@@ -94,3 +100,21 @@ def getOwnedItems(villagerDBUrl, driver):
             item_name = modifier[1:-1] + ' ' + ' '.join(item_name.split()[:-1])
         owned_items.append(item_name.lower().strip())
     return owned_items
+
+
+def getNookazonOwnedItems(nookazonURL, driver):
+
+    url = nookazonURL
+    driver.get(url)
+    html = driver.page_source
+    soup = BeautifulSoup(html, features="lxml")
+    items = []
+    for listing in soup.find_all(class_="listing-name"):
+        item = listing.string
+        if (item.split()[0].isdigit()):
+            item_name = (' ').join(item.split()[2:]).lower()
+        else:
+            item_name = item.lower()
+        items.append(item_name)
+
+    return items

@@ -7,7 +7,7 @@ Currently supports importing from your Nookazon Catalog, Nookazon Listings, or a
 
 ## Requirements
 - Python 3.7
-    (it is likely this will also work on any Python > 3, but no guarantees
+    (it is likely this will also work on any Python > 3, but no guarantees)
 
 ## Usage
 1. `git clone` the repository
